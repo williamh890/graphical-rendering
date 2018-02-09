@@ -62,18 +62,22 @@ class TextParser {
 
     static ParseFaceIndices(token: string): Array<number> {
         let indices: Array<number> = [0, 0, 0];
+
         if (token.search("//"))
             token.replace("//", "/0/");
-        let tokens = token.split("/");
+        let tokens = token.split("/").filter(t => t !== "");
+
         if (tokens.length >= 1) {
             indices[0] = parseInt(tokens[0]) - 1;
         }
+
         if (tokens.length == 2) {
-            indices[2] = parseInt(tokens[2]) - 1;
+            indices[2] = parseInt(tokens[1]) - 1;
         } else if (tokens.length == 3) {
             indices[1] = parseInt(tokens[1]) - 1;
             indices[2] = parseInt(tokens[2]) - 1;
         }
+
         return indices;
     }
 
@@ -82,6 +86,7 @@ class TextParser {
         if (tokens.length < 4) {
             return indices;
         }
+
         let v1: Array<number> = TextParser.ParseFaceIndices(tokens[1]);
         let v2: Array<number> = TextParser.ParseFaceIndices(tokens[2]);
         let v3: Array<number> = TextParser.ParseFaceIndices(tokens[3]);

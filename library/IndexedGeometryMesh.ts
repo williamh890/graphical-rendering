@@ -76,8 +76,9 @@ class IndexedGeometryMesh {
 
         // TODO: Create and upload the vertex and element array buffers here
 
-        const vertexBufferData = new Float32Array(this.vertices);
-
+        const vertexBufferData = new Float32Array(this.vertices.map(
+            d => !!d ? d : 0.
+        ));
         gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bufferData(gl.ARRAY_BUFFER, vertexBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -89,6 +90,7 @@ class IndexedGeometryMesh {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
         console.log('elements added', elementBufferData);
+        console.log('vertices added', vertexBufferData)
 
         this._dirty = false;
     }
@@ -98,8 +100,7 @@ class IndexedGeometryMesh {
         let gl = this._renderingContext.gl;
         this.BuildBuffers(gl);
 
-        // TODO: Render the indexed geometry mesh here
-
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._ibo);
 
         // Assume our vertex buffer is laid out as
@@ -120,7 +121,6 @@ class IndexedGeometryMesh {
         const tloc = rc.GetAttribLocation(texcoordName);
         const cloc = rc.GetAttribLocation(colorName);
 
-        console.log(vloc, nloc, tloc, cloc);
         // quit if no positions!
         if (vloc < 0) {
             return;
@@ -141,11 +141,11 @@ class IndexedGeometryMesh {
             gl.vertexAttribPointer(cloc, csize, gl.FLOAT, false, stride, coffset);
             gl.enableVertexAttribArray(cloc);
         }
-
         // Use drawArrays if not using elements
         for (const surface of this.surfaces) {
             gl.drawElements(surface.mode, surface.count, gl.UNSIGNED_INT, 0);
         }
+
 
         if (vloc >= 0) {
             gl.disableVertexAttribArray(vloc);
@@ -160,6 +160,7 @@ class IndexedGeometryMesh {
             gl.disableVertexAttribArray(cloc);
         }
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     }
 }

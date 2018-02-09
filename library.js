@@ -1927,7 +1927,7 @@ var IndexedGeometryMesh = /** @class */ (function () {
         if (!this._dirty)
             return;
         // TODO: Create and upload the vertex and element array buffers here
-        var vertexBufferData = new Float32Array(this.vertices);
+        var vertexBufferData = new Float32Array(this.vertices.map(function (d) { return !!d ? d : 0.; }));
         gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bufferData(gl.ARRAY_BUFFER, vertexBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -1936,13 +1936,14 @@ var IndexedGeometryMesh = /** @class */ (function () {
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         console.log('elements added', elementBufferData);
+        console.log('vertices added', vertexBufferData);
         this._dirty = false;
     };
     IndexedGeometryMesh.prototype.Render = function (rc, sg) {
         // Rendering code goes here
         var gl = this._renderingContext.gl;
         this.BuildBuffers(gl);
-        // TODO: Render the indexed geometry mesh here
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._ibo);
         // Assume our vertex buffer is laid out as
         // V0 [ vx, vy, vz, nx, ny, nz, u, v, w, r, g, b ]
@@ -1959,7 +1960,6 @@ var IndexedGeometryMesh = /** @class */ (function () {
         var nloc = rc.GetAttribLocation(normalName);
         var tloc = rc.GetAttribLocation(texcoordName);
         var cloc = rc.GetAttribLocation(colorName);
-        console.log(vloc, nloc, tloc, cloc);
         // quit if no positions!
         if (vloc < 0) {
             return;
@@ -1997,6 +1997,7 @@ var IndexedGeometryMesh = /** @class */ (function () {
         if (cloc >= 0) {
             gl.disableVertexAttribArray(cloc);
         }
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     };
     return IndexedGeometryMesh;
@@ -2404,6 +2405,7 @@ var Scenegraph = /** @class */ (function () {
             var tokens = lines_2[_i];
             if (tokens.length >= 2) {
                 if (tokens[0] === 'usemtl') {
+                    mesh.BeginSurface(gl.TRIANGLES);
                     var name_1 = TextParser.ParseIdentifier(tokens);
                     mesh.SetMtl(name_1);
                 }
@@ -2423,12 +2425,15 @@ var Scenegraph = /** @class */ (function () {
                 }
             }
             if (tokens.length >= 4) {
+                //console.log(tokens);
                 if (tokens[0] === 'v') {
                     var v = TextParser.ParseVector(tokens);
+                    //   console.log(v);
                     positions.push(v);
                 }
                 else if (tokens[0] === 'vn') {
                     var vn = TextParser.ParseVector(tokens);
+                    //  console.log(vn);
                     normals.push(vn);
                 }
                 else if (tokens[0] === 'vt') {
@@ -2436,17 +2441,30 @@ var Scenegraph = /** @class */ (function () {
                     texcoords.push(vt);
                 }
                 else if (tokens[0] === 'f') {
-                    if (mesh.surfaces.length === 0)
+                    if (mesh.surfaces.length === 0) {
                         mesh.BeginSurface(gl.TRIANGLES);
+                    }
+                    // console.log('tokens', tokens);
                     var faceIndices = TextParser.ParseFace(tokens);
+                    // console.log('faceIndices', faceIndices);
                     var _a = [[], [], []], norm = _a[0], tex = _a[1], vert = _a[2];
                     for (var i = 0; i < 3; ++i) {
                         vert.push(faceIndices[i * 3 + 0]);
-                        norm.push(faceIndices[i * 3 + 1]);
-                        tex.push(faceIndices[i * 3 + 2]);
+                        if (faceIndices[i * 3 + 0]) {
+                            tex.push(faceIndices[i * 3 + 2]);
+                        }
+                        if (faceIndices[i * 3 + 2]) {
+                            norm.push(faceIndices[i * 3 + 1]);
+                        }
                     }
-                    mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
-                    mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
+                    if (norm.length > 0) {
+                        // console.log(norm);
+                        mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
+                    }
+                    if (tex.length > 0) {
+                        // console.log(tex);
+                        mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
+                    }
                     mesh.AddVertex(new Vector3(vert[0], vert[1], vert[2]));
                     mesh.AddIndex(-1);
                 }
@@ -2541,12 +2559,12 @@ var TextParser = /** @class */ (function () {
         var indices = [0, 0, 0];
         if (token.search("//"))
             token.replace("//", "/0/");
-        var tokens = token.split("/");
+        var tokens = token.split("/").filter(function (t) { return t !== ""; });
         if (tokens.length >= 1) {
             indices[0] = parseInt(tokens[0]) - 1;
         }
         if (tokens.length == 2) {
-            indices[2] = parseInt(tokens[2]) - 1;
+            indices[2] = parseInt(tokens[1]) - 1;
         }
         else if (tokens.length == 3) {
             indices[1] = parseInt(tokens[1]) - 1;
@@ -2716,7 +2734,7 @@ var WebGLAppHW1 = /** @class */ (function () {
             rc.SetUniform3f("SunDirTo", Vector3.makeUnit(0.25, 0.5, Math.sin(this.t1)));
             rc.SetUniform3f("SunE0", Vector3.make(1.0, 1.0, 1.0).mul(Math.sin(this.t1)));
             rc.SetMatrix4f("ProjectionMatrix", Matrix4.makePerspectiveX(45.0, this.renderingContext.aspectRatio, 0.1, 100.0));
-            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(0.0, 0.0, -2.0));
+            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(-4.0, -4.0, -70.0));
             var m = Matrix4.makeRotation(5 * Math.sin(10 * this.t1), 1.0, 0.0, 0.0);
             m.Rotate(10.0 * this.t1, 0.0, 1.0, 0.0);
             rc.SetMatrix4f("WorldMatrix", m); //Matrix4.makeRotation(10 * this.t1, 0.0, 1.0, 0.0));
@@ -2724,7 +2742,7 @@ var WebGLAppHW1 = /** @class */ (function () {
             // rc.SetMatrix4f("CameraMatrix", Matrix4.makeIdentity());
             // rc.SetMatrix4f("WorldMatrix", Matrix4.makeIdentity());
             // "" renders everything
-            this.scenegraph.RenderMesh("", rc);
+            this.scenegraph.RenderMesh("dragon.obj", rc);
             rc.Restore();
         }
         gl.useProgram(null);

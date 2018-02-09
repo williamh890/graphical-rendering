@@ -324,6 +324,7 @@ class Scenegraph {
         for (const tokens of lines) {
             if (tokens.length >= 2) {
                 if (tokens[0] === 'usemtl') {
+                    mesh.BeginSurface(gl.TRIANGLES);
                     const name = TextParser.ParseIdentifier(tokens);
                     mesh.SetMtl(name);
                 } else if (tokens[0] === 'mtllib') {
@@ -339,30 +340,47 @@ class Scenegraph {
                 }
             }
             if (tokens.length >= 4) {
+                //console.log(tokens);
                 if (tokens[0] === 'v') {
                     const v = TextParser.ParseVector(tokens);
+                 //   console.log(v);
                     positions.push(v);
                 } else if (tokens[0] === 'vn') {
                     const vn = TextParser.ParseVector(tokens);
+                  //  console.log(vn);
                     normals.push(vn);
                 } else if (tokens[0] === 'vt') {
                     const vt = TextParser.ParseVector(tokens);
                     texcoords.push(vt);
                 } else if (tokens[0] === 'f') {
-                    if (mesh.surfaces.length === 0)
+                    if (mesh.surfaces.length === 0) {
                         mesh.BeginSurface(gl.TRIANGLES);
+                    }
 
+                    // console.log('tokens', tokens);
                     const faceIndices = TextParser.ParseFace(tokens);
+                    // console.log('faceIndices', faceIndices);
                     const [norm, tex, vert] = [[], [], []];
 
                     for (let i = 0; i < 3; ++i) {
                         vert.push(faceIndices[i * 3 + 0]);
-                        norm.push(faceIndices[i * 3 + 1]);
-                        tex.push(faceIndices[i * 3 + 2]);
+
+                        if (faceIndices[i * 3 + 0]) {
+                            tex.push(faceIndices[i * 3 + 2]);
+                        }
+                        if (faceIndices[i * 3 + 2]) {
+                            norm.push(faceIndices[i * 3 + 1]);
+                        }
                     }
 
-                    mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
-                    mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
+                    if (norm.length > 0) {
+                        // console.log(norm);
+                        mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
+                    }
+                    if (tex.length > 0) {
+                        // console.log(tex);
+                        mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
+                    }
 
                     mesh.AddVertex(new Vector3(vert[0], vert[1], vert[2]));
                     mesh.AddIndex(-1);
@@ -371,6 +389,7 @@ class Scenegraph {
         }
 
         mesh.BuildBuffers(gl);
+
         this._meshes.set(name, mesh);
     }
 
