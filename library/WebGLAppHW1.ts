@@ -11,6 +11,7 @@ class WebGLAppHW1 {
         this.renderingContext = new RenderingContext(width, height);
         if (!this.renderingContext)
             throw "Unable to create rendering context!";
+        console.log('hello')
         this.scenegraph = new Scenegraph(this.renderingContext);
     }
 
@@ -57,7 +58,12 @@ class WebGLAppHW1 {
             rc.SetUniform3f("SunE0", Vector3.make(1.0, 1.0, 1.0).mul(Math.sin(this.t1)));
             rc.SetMatrix4f("ProjectionMatrix", Matrix4.makePerspectiveX(45.0, this.renderingContext.aspectRatio, 0.1, 100.0));
             rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(0.0, 0.0, -2.0));
-            rc.SetMatrix4f("WorldMatrix", Matrix4.makeRotation(10 * this.t1, 0.0, 1.0, 0.0));
+            let m = Matrix4.makeRotation(5 * Math.sin(10 * this.t1), 1.0, 0.0, 0.0);
+            m.Rotate(10.0 * this.t1, 0.0, 1.0, 0.0);
+            rc.SetMatrix4f("WorldMatrix", m);//Matrix4.makeRotation(10 * this.t1, 0.0, 1.0, 0.0));
+            // rc.SetMatrix4f("ProjectionMatrix", Matrix4.makeIdentity());
+            // rc.SetMatrix4f("CameraMatrix", Matrix4.makeIdentity());
+            // rc.SetMatrix4f("WorldMatrix", Matrix4.makeIdentity());
 
             // "" renders everything
             this.scenegraph.RenderMesh("", rc);

@@ -1,0 +1,4 @@
+Scenegraph.ts -- Add code to loadOBJ() method to load OBJ file using the IndexedGeometryMesh class.
+IndexedGeometryMesh.ts
+  * Add code to BuildBuffers() method to create/upload the vertex buffer objects.
+  * Add code to RenderMesh() method to render the vertex buffer object.

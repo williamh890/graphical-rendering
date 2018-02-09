@@ -224,6 +224,7 @@ class Scenegraph {
     private processTextFile(data: string, name: string, path: string, assetType: SGAssetType): void {
         let textParser = new TextParser(data);
 
+
         switch (assetType) {
             // ".SCN"
             case SGAssetType.Scene:
@@ -313,58 +314,63 @@ class Scenegraph {
         // s <newSmoothingGroup: string>
 
         let gl = this._renderingContext.gl;
-        let positions: Vector3[] = [];
-        let normals: Vector3[] = [];
-        let colors: Vector3[] = [];
-        let texcoords: Vector3[] = [];
         let mesh: IndexedGeometryMesh = new IndexedGeometryMesh(this._renderingContext);
 
-        // in case there are no mtllib's, usemtl's, o's, g's, or s's
-        mesh.BeginSurface(gl.TRIANGLES);
-        for (let tokens of lines) {
+        const positions: Vector3[] = [];
+        const normals: Vector3[] = [];
+        const texcoords: Vector3[] = [];
+        const indices: number[] = [];
+
+        for (const tokens of lines) {
             if (tokens.length >= 2) {
-                if (tokens[0] == "mtllib") {
-                    this.Load(path + tokens[1]);
-                    mesh.SetMtllib(TextParser.ParseIdentifier(tokens));
+                if (tokens[0] === 'usemtl') {
+                    const name = TextParser.ParseIdentifier(tokens);
+                    mesh.SetMtl(name);
+                } else if (tokens[0] === 'mtllib') {
+                    const name = tokens[1];
+                    // We want to also load this up asynchronously later
+                    mesh.SetMtllib(name);
+                } else if (tokens[0] === 'g') {
                     mesh.BeginSurface(gl.TRIANGLES);
-                } else if (tokens[1] == "usemtl") {
-                    mesh.SetMtl(TextParser.ParseIdentifier(tokens));
+                } else if (tokens[0] === 'o') {
                     mesh.BeginSurface(gl.TRIANGLES);
-                } else if (tokens[1] == "o") {
-                    mesh.BeginSurface(gl.TRIANGLES);
-                } else if (tokens[1] == "g") {
-                    mesh.BeginSurface(gl.TRIANGLES);
-                } else if (tokens[1] == "s") {
+                } else if (tokens[0] === 's') {
                     mesh.BeginSurface(gl.TRIANGLES);
                 }
             }
             if (tokens.length >= 4) {
-                if (tokens[0] == "v") {
-                    positions.push(TextParser.ParseVector(tokens));
-                } else if (tokens[0] == "vn") {
-                    normals.push(TextParser.ParseVector(tokens));
-                } else if (tokens[0] == "vt") {
-                    texcoords.push(TextParser.ParseVector(tokens));
-                } else if (tokens[0] == "f") {
-                    let indices = TextParser.ParseFace(tokens);
-                    for (let i = 0; i < 3; i++) {
-                        try {
-                            if (indices[i * 3 + 2] >= 0)
-                                mesh.SetNormal(normals[indices[i * 3 + 2]]);
-                            if (indices[i * 3 + 1] >= 0)
-                                mesh.SetTexCoord(texcoords[indices[i * 3 + 1]]);
-                            mesh.AddVertex(positions[indices[i * 3 + 0]]);
-                            mesh.AddIndex(-1);
-                        }
-                        catch (s) {
-                            console.log(s);
-                        }
+                if (tokens[0] === 'v') {
+                    const v = TextParser.ParseVector(tokens);
+                    positions.push(v);
+                } else if (tokens[0] === 'vn') {
+                    const vn = TextParser.ParseVector(tokens);
+                    normals.push(vn);
+                } else if (tokens[0] === 'vt') {
+                    const vt = TextParser.ParseVector(tokens);
+                    texcoords.push(vt);
+                } else if (tokens[0] === 'f') {
+                    if (mesh.surfaces.length === 0)
+                        mesh.BeginSurface(gl.TRIANGLES);
+
+                    const faceIndices = TextParser.ParseFace(tokens);
+                    const [norm, tex, vert] = [[], [], []];
+
+                    for (let i = 0; i < 3; ++i) {
+                        vert.push(faceIndices[i * 3 + 0]);
+                        norm.push(faceIndices[i * 3 + 1]);
+                        tex.push(faceIndices[i * 3 + 2]);
                     }
+
+                    mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
+                    mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
+
+                    mesh.AddVertex(new Vector3(vert[0], vert[1], vert[2]));
+                    mesh.AddIndex(-1);
                 }
             }
         }
 
-        mesh.BuildBuffers();
+        mesh.BuildBuffers(gl);
         this._meshes.set(name, mesh);
     }
 

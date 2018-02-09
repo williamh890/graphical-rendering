@@ -70,57 +70,96 @@ class IndexedGeometryMesh {
         this._vertex = new Vertex();
     }
 
-    BuildBuffers(): void {
+    BuildBuffers(gl): void {
         // Building the VBO goes here
         if (!this._dirty) return;
 
-        this._vboData = new Float32Array(this.vertices);
-        this._iboData = new Uint32Array(this.indices);
+        // TODO: Create and upload the vertex and element array buffers here
 
-        let gl = this._renderingContext.gl;
+        const vertexBufferData = new Float32Array(this.vertices);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, this._vboData, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+        const elementBufferData = new Uint32Array(this.indices);
+
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._ibo);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._iboData, gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        console.log('elements added', elementBufferData);
 
         this._dirty = false;
     }
 
     Render(rc: RenderConfig, sg: Scenegraph): void {
         // Rendering code goes here
-        this.BuildBuffers();
         let gl = this._renderingContext.gl;
+        this.BuildBuffers(gl);
 
-        let offsets = [0, 12, 24, 36];
-        let locs = [
-            rc.GetAttribLocation("aPosition"),
-            rc.GetAttribLocation("aNormal"),
-            rc.GetAttribLocation("aColor"),
-            rc.GetAttribLocation("aTexcoord")
-        ];
+        // TODO: Render the indexed geometry mesh here
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._ibo);
 
-        for (let i = 0; i < 4; i++) {
-            if (locs[i] >= 0) {
-                gl.enableVertexAttribArray(locs[i]);
-                gl.vertexAttribPointer(locs[i], 3, gl.FLOAT, false, 48, offsets[i]);
-            }
+        // Assume our vertex buffer is laid out as
+        // V0 [ vx, vy, vz, nx, ny, nz, u, v, w, r, g, b ]
+        const voffset = 0, vsize = 3;
+        const noffset = 12, nsize = 3;
+        const toffset = 24, tsize = 3;
+        const coffset = 36, csize = 3;
+        const stride = 48;
+
+        const  positionName = 'aPosition';
+        const  normalName = 'aNormal';
+        const  texcoordName = 'aTexcoord';
+        const  colorName = 'aColor';
+
+        const vloc = rc.GetAttribLocation(positionName);
+        const nloc = rc.GetAttribLocation(normalName);
+        const tloc = rc.GetAttribLocation(texcoordName);
+        const cloc = rc.GetAttribLocation(colorName);
+
+        console.log(vloc, nloc, tloc, cloc);
+        // quit if no positions!
+        if (vloc < 0) {
+            return;
+        }
+        if (vloc >= 0) {
+            gl.vertexAttribPointer(vloc, vsize, gl.FLOAT, false, stride, voffset);
+            gl.enableVertexAttribArray(vloc);
+        }
+        if (nloc >= 0) {
+            gl.vertexAttribPointer(nloc, nsize, gl.FLOAT, false, stride, noffset);
+            gl.enableVertexAttribArray(nloc);
+        }
+        if (tloc >= 0) {
+            gl.vertexAttribPointer(tloc, tsize, gl.FLOAT, false, stride, toffset);
+            gl.enableVertexAttribArray(tloc);
+        }
+        if (cloc >= 0) {
+            gl.vertexAttribPointer(cloc, csize, gl.FLOAT, false, stride, coffset);
+            gl.enableVertexAttribArray(cloc);
         }
 
-        for (let s of this.surfaces) {
-            sg.UseMaterial(rc, s.mtllib, s.mtl);
-            gl.drawElements(s.mode, s.count, gl.UNSIGNED_INT, s.offset);
+        // Use drawArrays if not using elements
+        for (const surface of this.surfaces) {
+            gl.drawElements(surface.mode, surface.count, gl.UNSIGNED_INT, 0);
         }
 
-        for (let i = 0; i < 4; i++) {
-            if (locs[i] >= 0) {
-                gl.disableVertexAttribArray(locs[i]);
-            }
+        if (vloc >= 0) {
+            gl.disableVertexAttribArray(vloc);
         }
+        if (nloc >= 0) {
+            gl.disableVertexAttribArray(nloc);
+        }
+        if (tloc >= 0) {
+            gl.disableVertexAttribArray(tloc);
+        }
+        if (cloc >= 0) {
+            gl.disableVertexAttribArray(cloc);
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     }
 }
