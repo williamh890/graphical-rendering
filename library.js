@@ -2443,15 +2443,15 @@ var Scenegraph = /** @class */ (function () {
                     }
                     var faceIndices = TextParser.ParseFace(tokens);
                     for (var i = 0; i < 3; ++i) {
-                        mesh.AddVertex(positions[faceIndices[i * 3 + 0]]);
                         if (faceIndices[i * 3 + 2] && faceIndices[i * 3 + 2] >= 0) {
                             var normIndex = faceIndices[i * 3 + 2];
                             var normVal = normals[normIndex];
                             mesh.SetNormal(normVal);
                         }
-                        if (faceIndices[i * 3 + 1] && faceIndices[i * 3 + 2] >= 0) {
+                        if (faceIndices[i * 3 + 1] && faceIndices[i * 3 + 1] >= 0) {
                             mesh.SetTexCoord(texcoords[faceIndices[i * 3 + 1]]);
                         }
+                        mesh.AddVertex(positions[faceIndices[i * 3 + 0]]);
                         mesh.AddIndex(-1);
                     }
                 }
@@ -2545,18 +2545,20 @@ var TextParser = /** @class */ (function () {
     TextParser.ParseFaceIndices = function (token) {
         var indices = [0, 0, 0];
         if (token.search("//"))
-            token.replace("//", "/0/");
-        var tokens = token.split("/").filter(function (t) { return t !== ""; });
+            token = token.replace("//", "/0/");
+        var tokens = token.split("/");
+        // console.log(tokens);
         if (tokens.length >= 1) {
             indices[0] = parseInt(tokens[0]) - 1;
         }
         if (tokens.length == 2) {
-            indices[2] = parseInt(tokens[1]) - 1;
+            indices[2] = parseInt(tokens[2]) - 1;
         }
         else if (tokens.length == 3) {
             indices[1] = parseInt(tokens[1]) - 1;
             indices[2] = parseInt(tokens[2]) - 1;
         }
+        // console.log(indices);
         return indices;
     };
     TextParser.ParseFace = function (tokens) {
@@ -2721,7 +2723,7 @@ var WebGLAppHW1 = /** @class */ (function () {
             rc.SetUniform3f("SunDirTo", Vector3.makeUnit(0.25, 0.5, Math.sin(this.t1)));
             rc.SetUniform3f("SunE0", Vector3.make(1.0, 1.0, 1.0).mul(Math.sin(this.t1)));
             rc.SetMatrix4f("ProjectionMatrix", Matrix4.makePerspectiveX(45.0, this.renderingContext.aspectRatio, 0.1, 100.0));
-            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(0.0, 0.0, -4.0));
+            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(0.0, 0.0, -1.5));
             var m = Matrix4.makeRotation(5 * Math.sin(10 * this.t1), 1.0, 0.0, 0.0);
             m.Rotate(10.0 * this.t1, 0.0, 1.0, 0.0);
             rc.SetMatrix4f("WorldMatrix", m); //Matrix4.makeRotation(10 * this.t1, 0.0, 1.0, 0.0));

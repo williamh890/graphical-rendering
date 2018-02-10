@@ -64,20 +64,20 @@ class TextParser {
         let indices: Array<number> = [0, 0, 0];
 
         if (token.search("//"))
-            token.replace("//", "/0/");
-        let tokens = token.split("/").filter(t => t !== "");
-
+            token = token.replace("//", "/0/");
+        let tokens = token.split("/");
+        // console.log(tokens);
         if (tokens.length >= 1) {
             indices[0] = parseInt(tokens[0]) - 1;
         }
 
         if (tokens.length == 2) {
-            indices[2] = parseInt(tokens[1]) - 1;
+            indices[2] = parseInt(tokens[2]) - 1;
         } else if (tokens.length == 3) {
             indices[1] = parseInt(tokens[1]) - 1;
             indices[2] = parseInt(tokens[2]) - 1;
         }
-
+        // console.log(indices);
         return indices;
     }
 

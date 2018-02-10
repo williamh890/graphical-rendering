@@ -359,7 +359,6 @@ class Scenegraph {
                     const faceIndices = TextParser.ParseFace(tokens);
 
                     for (let i = 0; i < 3; ++i) {
-                        mesh.AddVertex(positions[faceIndices[i * 3 + 0]]);
 
                         if (faceIndices[i * 3 + 2] && faceIndices[i * 3 + 2] >= 0) {
                             const normIndex = faceIndices[i * 3 + 2]
@@ -368,13 +367,13 @@ class Scenegraph {
                             mesh.SetNormal(normVal);
                         }
 
-                        if (faceIndices[i * 3 + 1] && faceIndices[i * 3 + 2] >= 0 ) {
+                        if (faceIndices[i * 3 + 1] && faceIndices[i * 3 + 1] >= 0 ) {
                             mesh.SetTexCoord(texcoords[faceIndices[i * 3 + 1]]);
                         }
 
+                        mesh.AddVertex(positions[faceIndices[i * 3 + 0]]);
                         mesh.AddIndex(-1);
                     }
-
                 }
             }
         }
