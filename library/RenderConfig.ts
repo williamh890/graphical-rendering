@@ -50,9 +50,7 @@ class RenderConfig {
     get usable(): boolean { return this.IsCompiledAndLinked(); }
 
     IsCompiledAndLinked(): boolean {
-        if (this._isCompiled && this._isLinked)
-            return true;
-        return false;
+        return this._isCompiled && this._isLinked;
     }
 
     public Use() {

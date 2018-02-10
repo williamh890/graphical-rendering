@@ -918,9 +918,7 @@ var RenderConfig = /** @class */ (function () {
         configurable: true
     });
     RenderConfig.prototype.IsCompiledAndLinked = function () {
-        if (this._isCompiled && this._isLinked)
-            return true;
-        return false;
+        return this._isCompiled && this._isLinked;
     };
     RenderConfig.prototype.Use = function () {
         var gl = this._context.gl;
@@ -1927,7 +1925,7 @@ var IndexedGeometryMesh = /** @class */ (function () {
         if (!this._dirty)
             return;
         // TODO: Create and upload the vertex and element array buffers here
-        var vertexBufferData = new Float32Array(this.vertices.map(function (d) { return !!d ? d : 0.; }));
+        var vertexBufferData = new Float32Array(this.vertices);
         gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bufferData(gl.ARRAY_BUFFER, vertexBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -2401,6 +2399,7 @@ var Scenegraph = /** @class */ (function () {
         var normals = [];
         var texcoords = [];
         var indices = [];
+        mesh.BeginSurface(gl.TRIANGLES);
         for (var _i = 0, lines_2 = lines; _i < lines_2.length; _i++) {
             var tokens = lines_2[_i];
             if (tokens.length >= 2) {
@@ -2428,12 +2427,10 @@ var Scenegraph = /** @class */ (function () {
                 //console.log(tokens);
                 if (tokens[0] === 'v') {
                     var v = TextParser.ParseVector(tokens);
-                    //   console.log(v);
                     positions.push(v);
                 }
                 else if (tokens[0] === 'vn') {
                     var vn = TextParser.ParseVector(tokens);
-                    //  console.log(vn);
                     normals.push(vn);
                 }
                 else if (tokens[0] === 'vt') {
@@ -2444,29 +2441,19 @@ var Scenegraph = /** @class */ (function () {
                     if (mesh.surfaces.length === 0) {
                         mesh.BeginSurface(gl.TRIANGLES);
                     }
-                    // console.log('tokens', tokens);
                     var faceIndices = TextParser.ParseFace(tokens);
-                    // console.log('faceIndices', faceIndices);
-                    var _a = [[], [], []], norm = _a[0], tex = _a[1], vert = _a[2];
                     for (var i = 0; i < 3; ++i) {
-                        vert.push(faceIndices[i * 3 + 0]);
-                        if (faceIndices[i * 3 + 0]) {
-                            tex.push(faceIndices[i * 3 + 2]);
+                        mesh.AddVertex(positions[faceIndices[i * 3 + 0]]);
+                        if (faceIndices[i * 3 + 2] && faceIndices[i * 3 + 2] >= 0) {
+                            var normIndex = faceIndices[i * 3 + 2];
+                            var normVal = normals[normIndex];
+                            mesh.SetNormal(normVal);
                         }
-                        if (faceIndices[i * 3 + 2]) {
-                            norm.push(faceIndices[i * 3 + 1]);
+                        if (faceIndices[i * 3 + 1] && faceIndices[i * 3 + 2] >= 0) {
+                            mesh.SetTexCoord(texcoords[faceIndices[i * 3 + 1]]);
                         }
+                        mesh.AddIndex(-1);
                     }
-                    if (norm.length > 0) {
-                        // console.log(norm);
-                        mesh.SetNormal(new Vector3(norm[0], norm[1], norm[2]));
-                    }
-                    if (tex.length > 0) {
-                        // console.log(tex);
-                        mesh.SetTexCoord(new Vector3(tex[0], tex[1], tex[2]));
-                    }
-                    mesh.AddVertex(new Vector3(vert[0], vert[1], vert[2]));
-                    mesh.AddIndex(-1);
                 }
             }
         }
@@ -2734,7 +2721,7 @@ var WebGLAppHW1 = /** @class */ (function () {
             rc.SetUniform3f("SunDirTo", Vector3.makeUnit(0.25, 0.5, Math.sin(this.t1)));
             rc.SetUniform3f("SunE0", Vector3.make(1.0, 1.0, 1.0).mul(Math.sin(this.t1)));
             rc.SetMatrix4f("ProjectionMatrix", Matrix4.makePerspectiveX(45.0, this.renderingContext.aspectRatio, 0.1, 100.0));
-            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(-4.0, -4.0, -70.0));
+            rc.SetMatrix4f("CameraMatrix", Matrix4.makeTranslation(0.0, 0.0, -4.0));
             var m = Matrix4.makeRotation(5 * Math.sin(10 * this.t1), 1.0, 0.0, 0.0);
             m.Rotate(10.0 * this.t1, 0.0, 1.0, 0.0);
             rc.SetMatrix4f("WorldMatrix", m); //Matrix4.makeRotation(10 * this.t1, 0.0, 1.0, 0.0));

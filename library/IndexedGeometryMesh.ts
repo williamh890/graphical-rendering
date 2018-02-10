@@ -76,9 +76,7 @@ class IndexedGeometryMesh {
 
         // TODO: Create and upload the vertex and element array buffers here
 
-        const vertexBufferData = new Float32Array(this.vertices.map(
-            d => !!d ? d : 0.
-        ));
+        const vertexBufferData = new Float32Array(this.vertices);
         gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
         gl.bufferData(gl.ARRAY_BUFFER, vertexBufferData, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
